@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import './App.css';
 import DiaryEditor from './DiaryEditor';
 import DiaryList from './DiaryList';
+import Lifecycle from './Lifecycle';
 
 // const dummyList = [
 //   {
@@ -45,17 +46,26 @@ function App() {
     setData([newItem, ...data]); // 새로운 일기에 기존 일기를 이어 붙인 효과
   }; // 일기 배열에 새로운 일기를 추가하는 함수
 
-  const onDelete = (targetId) => {
+  const onRemove = (targetId) => {
     console.log(`${targetId}가 삭제되었습니다.`);
     const newDiaryList = data.filter((it) => it.id !== targetId);
     setData(newDiaryList);
     // targetId가 id인 것만 제거한 새로운 배열을 만든 후 data를 변경
   }; // 일기를 삭제하는 함수
 
+  const onEdit = (targetId, newContent) => {
+    setData(
+      data.map((it) =>
+        it.id === targetId ? { ...it, content: newContent } : it
+      ) // id가 targetId인 것의 content를 newContent로 변경
+    );
+  }; // 일기를 수정하는 함수
+
   return (
     <div className="App">
+      <Lifecycle />
       <DiaryEditor onCreate={onCreate} />
-      <DiaryList onDelete={onDelete} diaryList={data} />
+      <DiaryList onEdit={onEdit} onRemove={onRemove} diaryList={data} />
       {/* diaryList라는 이름으로 DiaryList 컴포넌트에서 props를 받을 수 있음  */}
     </div>
   );
