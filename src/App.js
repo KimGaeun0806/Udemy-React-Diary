@@ -1,40 +1,48 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import DiaryEditor from './DiaryEditor';
 import DiaryList from './DiaryList';
 import Lifecycle from './Lifecycle';
 
-// const dummyList = [
-//   {
-//     id: 1,
-//     author: '김가은',
-//     content: '하이 1',
-//     emotion: '1',
-//     created_date: new Date().getTime(), // 시간 객체 생성 (new Date에 아무것도 넣지 않으면 현재 시간 기준으로 생성됨). getTime()을 사용해서 시간을 ms로 표현.
-//   },
-//   {
-//     id: 2,
-//     author: '김가은2',
-//     content: '하이 12',
-//     emotion: '1',
-//     created_date: new Date().getTime(),
-//   },
-//   {
-//     id: 3,
-//     author: '김가은3',
-//     content: '하이 123',
-//     emotion: '1',
-//     created_date: new Date().getTime(),
-//   },
-// ];
+// https://jsonplaceholder.typicode.com/comments
+
+// {
+//   "postId": 1,
+//   "id": 1,
+//   "name": "id labore ex et quam laborum",
+//   "email": "Eliseo@gardner.biz",
+//   "body": "laudantium enim quasi est quidem magnam voluptate ipsam eos\ntempora quo necessitatibus\ndolor quam autem quasi\nreiciendis et nam sapiente accusantium"
+// }, 형식
 
 function App() {
   const [data, setData] = useState([]); // 데이터 (일기) 관리
 
   const dataId = useRef(0); // 일기별 id
 
+  const getData = async () => {
+    const res = await fetch(
+      'https://jsonplaceholder.typicode.com/comments'
+    ).then((res) => res.json());
+
+    const initData = res.slice(0, 20).map((it) => {
+      // 데이터들 중에서 0부터 19 인덱스까지만 자름
+      return {
+        author: it.email,
+        content: it.body,
+        emotion: Math.floor(Math.random() * 5) + 1, // 0-4의 랜덤 난수 생성한 후 소수점을 버리고 + 1
+        created_date: new Date().getTime(),
+        id: dataId.current++, // id에 현재 값을 넣고 1을 더하기
+      };
+    });
+    setData(initData);
+  };
+
+  useEffect(() => {
+    getData(); // api 호출
+  }, []); // 컴포넌트가 mount 되는 시점에 getData() 호출
+
   const onCreate = (author, content, emotion) => {
-    const created_date = new Date().getTime(); // 현재 시간
+    const created_date = new Date().getTime(); // 시간 객체 생성 (new Date에 아무것도 넣지 않으면 현재 시간 기준으로 생성됨). getTime()을 사용해서 시간을 ms로 표현.
     const newItem = {
       author,
       content,
