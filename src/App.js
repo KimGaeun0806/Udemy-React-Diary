@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import DiaryEditor from './DiaryEditor';
 import DiaryList from './DiaryList';
@@ -43,7 +43,7 @@ function App() {
     getData(); // api 호출
   }, []); // 컴포넌트가 mount 되는 시점에 getData() 호출
 
-  const onCreate = (author, content, emotion) => {
+  const onCreate = useCallback((author, content, emotion) => {
     const created_date = new Date().getTime(); // 시간 객체 생성 (new Date에 아무것도 넣지 않으면 현재 시간 기준으로 생성됨). getTime()을 사용해서 시간을 ms로 표현.
     const newItem = {
       author,
@@ -53,22 +53,43 @@ function App() {
       id: dataId.current,
     };
     dataId.current += 1;
-    setData([newItem, ...data]); // 새로운 일기에 기존 일기를 이어 붙인 효과
-  }; // 일기 배열에 새로운 일기를 추가하는 함수
 
-  const onRemove = (targetId) => {
-    const newDiaryList = data.filter((it) => it.id !== targetId);
-    setData(newDiaryList);
+    setData((data) => [newItem, ...data]);
+    // 함수형 업데이트 (setData에 콜백 함수 전달)
+    // useCallback의 두 번째 인수가 빈 배열이여도, 인수(data)를 통해서 항상 최신의 state를 참고할 수 있음
+
+    // setData([newItem, ...data]); // 새로운 일기에 기존 일기를 이어 붙인 효과
+    // useCallback의 두 번째 인수가 빈 배열일 때 이렇게 하면 최신의 데이터 state 값을 참고할 수 없기 때문에 이상하게 동작함
+  }, []);
+  // 일기 배열에 새로운 일기를 추가하는 함수
+  // useCallback -> 값이 아니라 (메모이제이션된) 콜백함수를 반환함
+  // 두 번째 인수로 전달한 값이 변하지 않으면 첫 번째 인수로 전달한 콜백함수를 계속 재사용
+  // onCreate 함수가 계속 재생성되지 않게 막음
+  // 두 번째 인수로 빈 배열을 전달해서, 마운트되는 시점에 한 번만 생성하고 그 다음부터는 재사용
+  // useCallback을 사용하지 않았을 시에는, 일기를 삭제할 때마다 onCreate를 props로 받는 DiaryEditor 컴포넌트도 리렌더링됨
+
+  const onRemove = useCallback((targetId) => {
+    setData((data) => data.filter((it) => it.id !== targetId));
+    // 아래 코드를 함수형 업데이트로 변경한 것
+    // setData 함수에 전달되는 파라미터에 최신 state가 전달되는 것이기 때문에, 최신 state를 사용하기 위해서는 함수형 업데이트의 인수부분 데이터를 사용해야 함
+
+    // const newDiaryList = data.filter((it) => it.id !== targetId);
+    // setData(newDiaryList);
     // targetId가 id인 것만 제거한 새로운 배열을 만든 후 data를 변경
-  }; // 일기를 삭제하는 함수
+  }, []);
+  // 일기를 삭제하는 함수
+  // onRemove에 useCallback을 사용함으로써, DiaryItem에 onRemove가 props로 전달돼서 일기 하나만 삭제할 때도 일기들 모두가 리렌더링되던 것을 방지할 수 있음
 
-  const onEdit = (targetId, newContent) => {
+  const onEdit = useCallback((targetId, newContent) => {
     setData(
-      data.map((it) =>
-        it.id === targetId ? { ...it, content: newContent } : it
-      ) // id가 targetId인 것의 content를 newContent로 변경
+      (data) =>
+        data.map((it) =>
+          it.id === targetId ? { ...it, content: newContent } : it
+        ) // id가 targetId인 것의 content를 newContent로 변경
     );
-  }; // 일기를 수정하는 함수
+  }, []);
+  // 일기를 수정하는 함수
+  // // onRemove에 useCallback을 사용함으로써, DiaryItem에 onRemove가 props로 전달돼서 일기 하나만 수정할 때도 일기들 모두가 리렌더링되던 것을 방지할 수 있음
 
   const getDiaryAnalysis = useMemo(() => {
     const goodCount = data.filter((it) => it.emotion >= 3).length; // 감정점수 3 이상인 일기의 개수

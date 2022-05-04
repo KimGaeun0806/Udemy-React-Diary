@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const DiaryEditor = ({ onCreate }) => {
   const authorInput = useRef(); // html DOM 요소에 접근할 수 있음
@@ -106,4 +106,5 @@ const DiaryEditor = ({ onCreate }) => {
   );
 };
 
-export default DiaryEditor;
+export default React.memo(DiaryEditor);
+// React.memo(DiaryEditor) -> React.memo로 컴포넌트를 감싼 것과 같은 효과
