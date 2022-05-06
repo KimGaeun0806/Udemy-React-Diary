@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import './App.css';
 import DiaryEditor from './DiaryEditor';
 import DiaryList from './DiaryList';
@@ -16,8 +23,39 @@ import OptimizeTest_2 from './OptimizeTest_2';
 //   "body": "laudantium enim quasi est quidem magnam voluptate ipsam eos\ntempora quo necessitatibus\ndolor quam autem quasi\nreiciendis et nam sapiente accusantium"
 // }, 형식
 
+const reducer = (state, action) => {
+  // state는 상태변화 일어나기 직전 state
+  // action은 어떤 상태변화를 일으켜야 하는지에 대한 정보들이 담김
+  switch (action.type) {
+    case 'INIT': {
+      return action.data;
+    }
+    case 'CREATE': {
+      const created_date = new Date().getTime();
+      const newItem = {
+        ...action.data,
+        created_date,
+      };
+      return [newItem, ...state];
+    }
+    case 'REMOVE': {
+      return state.filter((it) => it.id !== action.targetId);
+    }
+    case 'EDIT': {
+      return state.map((it) =>
+        it.id === action.targetId ? { ...it, content: action.newContent } : it
+      );
+    }
+    default:
+      return state;
+  }
+}; // dispatch를 호출하면 reducer가 실행되고, reducer가 return하는 값이 새로운 상태 값이 됨
+
 function App() {
-  const [data, setData] = useState([]); // 데이터 (일기) 관리
+  // const [data, setData] = useState([]); // 데이터 (일기) 관리
+
+  const [data, dispatch] = useReducer([reducer, []]);
+  // useReducer를 이용하면 상태변화 로직을 컴포넌트에서 분리할 수 있음. useState를 대체하여 사용할 수 있음.
 
   const dataId = useRef(0); // 일기별 id
 
@@ -36,7 +74,11 @@ function App() {
         id: dataId.current++, // id에 현재 값을 넣고 1을 더하기
       };
     });
-    setData(initData);
+
+    dispatch({ type: 'INIT', data: initData });
+    // reducer가 action 객체를 받는데, action의 type이 'INIT'이고, action에 필요한 data는 initData
+
+    // setData(initData);
   };
 
   useEffect(() => {
@@ -44,17 +86,22 @@ function App() {
   }, []); // 컴포넌트가 mount 되는 시점에 getData() 호출
 
   const onCreate = useCallback((author, content, emotion) => {
-    const created_date = new Date().getTime(); // 시간 객체 생성 (new Date에 아무것도 넣지 않으면 현재 시간 기준으로 생성됨). getTime()을 사용해서 시간을 ms로 표현.
-    const newItem = {
-      author,
-      content,
-      emotion,
-      created_date,
-      id: dataId.current,
-    };
+    dispatch({
+      type: 'CREATE',
+      data: { author, content, emotion, id: dataId.current },
+    });
+
+    // const created_date = new Date().getTime(); // 시간 객체 생성 (new Date에 아무것도 넣지 않으면 현재 시간 기준으로 생성됨). getTime()을 사용해서 시간을 ms로 표현.
+    // const newItem = {
+    //   author,
+    //   content,
+    //   emotion,
+    //   created_date,
+    //   id: dataId.current,
+    // };
     dataId.current += 1;
 
-    setData((data) => [newItem, ...data]);
+    // setData((data) => [newItem, ...data]);
     // 함수형 업데이트 (setData에 콜백 함수 전달)
     // useCallback의 두 번째 인수가 빈 배열이여도, 인수(data)를 통해서 항상 최신의 state를 참고할 수 있음
 
@@ -69,7 +116,9 @@ function App() {
   // useCallback을 사용하지 않았을 시에는, 일기를 삭제할 때마다 onCreate를 props로 받는 DiaryEditor 컴포넌트도 리렌더링됨
 
   const onRemove = useCallback((targetId) => {
-    setData((data) => data.filter((it) => it.id !== targetId));
+    dispatch({ type: 'REMOVE', targetId });
+
+    // setData((data) => data.filter((it) => it.id !== targetId));
     // 아래 코드를 함수형 업데이트로 변경한 것
     // setData 함수에 전달되는 파라미터에 최신 state가 전달되는 것이기 때문에, 최신 state를 사용하기 위해서는 함수형 업데이트의 인수부분 데이터를 사용해야 함
 
@@ -81,12 +130,14 @@ function App() {
   // onRemove에 useCallback을 사용함으로써, DiaryItem에 onRemove가 props로 전달돼서 일기 하나만 삭제할 때도 일기들 모두가 리렌더링되던 것을 방지할 수 있음
 
   const onEdit = useCallback((targetId, newContent) => {
-    setData(
-      (data) =>
-        data.map((it) =>
-          it.id === targetId ? { ...it, content: newContent } : it
-        ) // id가 targetId인 것의 content를 newContent로 변경
-    );
+    dispatch({ type: 'EDIT', targetId, newContent });
+
+    // setData(
+    //   (data) =>s
+    //     data.map((it) =>
+    //       it.id === targetId ? { ...it, content: newContent } : it
+    //     ) // id가 targetId인 것의 content를 newContent로 변경
+    // );
   }, []);
   // 일기를 수정하는 함수
   // // onRemove에 useCallback을 사용함으로써, DiaryItem에 onRemove가 props로 전달돼서 일기 하나만 수정할 때도 일기들 모두가 리렌더링되던 것을 방지할 수 있음
