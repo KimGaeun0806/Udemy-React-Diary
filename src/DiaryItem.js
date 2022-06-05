@@ -1,14 +1,16 @@
-import React, { useRef, useState } from 'react';
+import React, { useContext, useRef, useState } from 'react';
+import { DiaryDispatchContext } from './App';
 
 const DiaryItem = ({
-  onEdit,
-  onRemove,
+  /* onEdit, onRemove,*/
   author,
   content,
   created_date,
   emotion,
   id,
 }) => {
+  const { onRemove, onEdit } = useContext(DiaryDispatchContext);
+
   const [isEdit, setIsEdit] = useState(false); // 수정중인지 아닌지를 boolean으로 값 보관
   const toggleIsEdit = () => setIsEdit(!isEdit); // 수정하기 눌렀을 때 // toggleIsEdit이 호출되면 원래 isEdit의 값을 반전시킴
 

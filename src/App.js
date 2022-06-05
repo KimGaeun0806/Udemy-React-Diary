@@ -1,4 +1,4 @@
-import {
+import React, {
   useCallback,
   useEffect,
   useMemo,
@@ -51,7 +51,16 @@ const reducer = (state, action) => {
   }
 }; // dispatch를 호출하면 reducer가 실행되고, reducer가 return하는 값이 새로운 상태 값이 됨
 
-function App() {
+export const DiaryStateContext = React.createContext();
+export const DiaryDispatchContext = React.createContext();
+// context api로 props drilling 문제를 해결할 수 있음
+// context 생성 -> const Mycontext = React.createContext(defaultValue);
+// Context Provider를 통한 데이터 공급 -> <MyContext.Provider value={전역으로 전달하고자 하는 값}>
+//                                          {이 Context 안에 위치할 자식 컴포넌트들}
+//                                       </MyContext.Provider>
+// value 값을 자식 컴포넌트들에게 전달함
+
+const App = () => {
   // const [data, setData] = useState([]); // 데이터 (일기) 관리
 
   const [data, dispatch] = useReducer([reducer, []]);
@@ -142,6 +151,10 @@ function App() {
   // 일기를 수정하는 함수
   // // onRemove에 useCallback을 사용함으로써, DiaryItem에 onRemove가 props로 전달돼서 일기 하나만 수정할 때도 일기들 모두가 리렌더링되던 것을 방지할 수 있음
 
+  const memoizedDispatches = useMemo(() => {
+    return { onCreate, onRemove, onEdit };
+  }, []); // useMemo를 사용하지 않으면, App component가 재생성될 때 이 객체도 재생성됨
+
   const getDiaryAnalysis = useMemo(() => {
     const goodCount = data.filter((it) => it.emotion >= 3).length; // 감정점수 3 이상인 일기의 개수
     const badCount = data.length - goodCount; // 감정점수 2 이하인 일기의 개수
@@ -157,22 +170,29 @@ function App() {
   const { goodCount, badCount, goodRatio } = getDiaryAnalysis; // 함수를 호출한 결과값을 객체 비구조화 할당으로 받음
 
   return (
-    <div className="App">
-      {/* <Lifecycle /> */}
-      {/* <OptimizeTest /> */}
-      {/* <OptimizeTest_2 /> */}
+    // props이 변경될 때마다 컴포넌트가 재생성됨 -> DiaryStateContext.Provider에 value를 여러 개 전달하게 되면, props가 바뀔 때마다 아래의 컴포넌트들까지 리렌더링되어 최적화가 의미없어짐
+    <DiaryStateContext.Provider value={data}>
+      <DiaryDispatchContext.Provider value={memoizedDispatches}>
+        <div className="App">
+          {/* <Lifecycle /> */}
+          {/* <OptimizeTest /> */}
+          {/* <OptimizeTest_2 /> */}
 
-      <DiaryEditor onCreate={onCreate} />
+          <DiaryEditor /* onCreate={onCreate} */ />
 
-      <div>전체 일기: {data.length}</div>
-      <div>기분 좋은 일기 개수: {goodCount}</div>
-      <div>기분 나쁜 일기 개수: {badCount}</div>
-      <div>기분 좋은 일기 비율: {goodRatio}</div>
+          <div>전체 일기: {data.length}</div>
+          <div>기분 좋은 일기 개수: {goodCount}</div>
+          <div>기분 나쁜 일기 개수: {badCount}</div>
+          <div>기분 좋은 일기 비율: {goodRatio}</div>
 
-      <DiaryList onEdit={onEdit} onRemove={onRemove} diaryList={data} />
-      {/* diaryList라는 이름으로 DiaryList 컴포넌트에서 props를 받을 수 있음  */}
-    </div>
+          <DiaryList
+          /* onEdit={onEdit} onRemove={onRemove}  diaryList={data} */
+          />
+          {/* diaryList라는 이름으로 DiaryList 컴포넌트에서 props를 받을 수 있음  */}
+        </div>
+      </DiaryDispatchContext.Provider>
+    </DiaryStateContext.Provider>
   );
-}
+};
 
 export default App;

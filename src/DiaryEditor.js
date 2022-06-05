@@ -1,6 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { DiaryDispatchContext } from './App';
 
-const DiaryEditor = ({ onCreate }) => {
+const DiaryEditor = (
+  {
+    /* onCreate */
+  }
+) => {
+  const { onCreate } = useContext(DiaryDispatchContext); // 비구조화 할당으로 받아오기
+
   const authorInput = useRef(); // html DOM 요소에 접근할 수 있음
   const contentInput = useRef();
 
